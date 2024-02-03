@@ -45,6 +45,9 @@ WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL,
                                  wintypes.LPARAM)
 user32.EnumWindows.argtypes = [WNDENUMPROC,
                                wintypes.LPARAM]
+user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND,
+                                            wintypes.LPDWORD]
 
 
 def get_hwnd_from_pid(pid: int) -> int | None:
