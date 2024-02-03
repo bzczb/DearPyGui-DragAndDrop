@@ -48,25 +48,35 @@ user32.EnumWindows.argtypes = [WNDENUMPROC,
 user32.GetWindowThreadProcessId.restype = wintypes.DWORD
 user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND,
                                             wintypes.LPDWORD]
+user32.SetForegroundWindow.argtypes = [wintypes.HWND]
+
+GetWindowText = user32.GetWindowTextW
+GetWindowTextLength = user32.GetWindowTextLengthW
+IsWindowVisible = user32.IsWindowVisible
+user32.GetWindowTextLengthW.argtypes = [wintypes.HWND]
+user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, wintypes.INT]
+user32.IsWindowVisible.argtypes = [wintypes.HWND]
 
 
 def get_hwnd_from_pid(pid: int) -> int | None:
-    result = None
+    result = []
 
     def callback(hwnd, _):
         nonlocal result
         lpdw_PID = ctypes.c_ulong()
         user32.GetWindowThreadProcessId(hwnd, ctypes.byref(lpdw_PID))
         hwnd_PID = lpdw_PID.value
-
-        if hwnd_PID == pid:
-            result = hwnd
-            return False
+        if hwnd_PID == pid and IsWindowVisible(hwnd):
+            result.append(hwnd)
         return True
 
     cb_worker = WNDENUMPROC(callback)
     user32.EnumWindows(cb_worker, 0)
-    return result
+    if len(result) > 1:
+        raise RuntimeError('More than one window found!')
+    elif not result:
+        raise RuntimeError('No window found!')
+    return result[0]
 
 
 def key_state_to_keys_list(keyState: int) -> list[KEYSTATE]:

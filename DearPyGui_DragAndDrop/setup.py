@@ -25,8 +25,7 @@ class DropTarget(DesignatedWrapPolicy):
         ctypes.windll.user32.SetForegroundWindow(hwnd)
         DragAndDrop._DragEnter(tools.get_data_from_dataObject(dataObject),
                                tools.key_state_to_keys_list(keyState))
-        return 0, get_drop_effect()
-        # return winerror.S_OK, get_drop_effect()
+        return get_drop_effect()
 
     def DragOver(self, keyState, point, effect):
         DragAndDrop._DragOver(tools.key_state_to_keys_list(keyState))

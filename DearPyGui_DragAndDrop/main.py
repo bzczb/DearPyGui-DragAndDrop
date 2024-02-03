@@ -4,6 +4,7 @@ import traceback
 from enum import IntEnum
 from pathlib import Path
 from typing import Type, TypeVar, Dict, Callable, Any, Union, List
+import win32com.shell.shellcon as shellcon
 
 import dearpygui.dearpygui as dpg
 
@@ -24,6 +25,8 @@ class DROPEFFECT(IntEnum):
     NONE = 0
     COPY = 1
     MOVE = 2
+    LINK = 4
+    SCROLL = 0x80000000
 
 
 _now_drop_effect: DROPEFFECT = DROPEFFECT.MOVE
@@ -42,19 +45,20 @@ class DragAndDrop():
     __subscribers: Dict[SubscriptionTag, Type[DragAndDrop]] = {}
     __subscription_tag: SubscriptionTag = None
 
-    def DragEnter(self, dataObject: DragAndDropDataObject, keyState: list[KEYSTATE]):
+    def DragEnter(self, dataObject: DragAndDropDataObject, keyState: list[KEYSTATE]) -> bool:
         ...
 
-    def DragOver(self, keyState: list[KEYSTATE]):
+    def DragOver(self, keyState: list[KEYSTATE]) -> bool:
         ...
 
-    def DragLeave(self):
+    def DragLeave(self) -> bool:
         ...
 
-    def Drop(self, dataObject: DragAndDropDataObject, keyState: list[KEYSTATE]):
+    def Drop(self, dataObject: DragAndDropDataObject, keyState: list[KEYSTATE]) -> bool:
         ...
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         if self.__subscription_tag:
             self._unsubscribe(self.__subscription_tag)
         self.__subscription_tag = self._subscribe(self)  # noqa
@@ -78,33 +82,41 @@ class DragAndDrop():
     def _DragEnter(cls, dataObject, keyState):
         for self in cls.__subscribers.values():
             try:
-                self.DragEnter(dataObject, keyState)  # noqa
+                if self.DragEnter(dataObject, keyState):  # noqa
+                    return
             except Exception:
                 traceback.print_exc()
+        set_drop_effect(DROPEFFECT.NONE)
 
     @classmethod
     def _DragOver(cls, keyState):
         for self in cls.__subscribers.values():
             try:
-                self.DragOver(keyState)  # noqa
+                if self.DragOver(keyState):  # noqa
+                    return
             except Exception:
                 traceback.print_exc()
+        set_drop_effect(DROPEFFECT.NONE)
 
     @classmethod
     def _DragLeave(cls):
         for self in cls.__subscribers.values():
             try:
-                self.DragLeave()  # noqa
+                if self.DragLeave():  # noqa
+                    return
             except Exception:
                 traceback.print_exc()
+        set_drop_effect(DROPEFFECT.NONE)
 
     @classmethod
     def _Drop(cls, dataObject, keyState):
         for self in cls.__subscribers.values():
             try:
-                self.Drop(dataObject, keyState)  # noqa
+                if self.Drop(dataObject, keyState):  # noqa
+                    return
             except Exception:
                 traceback.print_exc()
+        set_drop_effect(DROPEFFECT.NONE)
 
 
 class _DragAndDropForFunctions(DragAndDrop):
