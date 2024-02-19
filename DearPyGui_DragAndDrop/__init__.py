@@ -10,4 +10,6 @@ from .main import set_drop_effect, get_drop_effect
 __version__ = "1.0.0"
 
 def initialize():
-    threading.Thread(target=__setup.setup, daemon=True).start()
+    thread = threading.Thread(target=__setup.setup, daemon=True)
+    thread.start()
+    return thread
